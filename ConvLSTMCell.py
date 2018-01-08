@@ -28,18 +28,18 @@ class ConvLSTMCell(object):
   def __call__(self, inputs, state, scope=None):
     """Convolutional Long short-term memory cell (ConvLSTM)."""
     with vs.variable_scope(scope or self.name): # "ConvLSTMCell"
-      c, h = array_ops.split(3, 2, state)
+      c, h = array_ops.split(state, 2, 3)
 
       # batch_size * height * width * channel
       concat = _conv([inputs, h], 4 * self.hidden_num, self.filter_size)
 
       # i = input_gate, j = new_input, f = forget_gate, o = output_gate
-      i, j, f, o = array_ops.split(3, 4, concat)
+      i, j, f, o = array_ops.split(concat, 4, 3)
 
       new_c = (c * sigmoid(f + self.forget_bias) + sigmoid(i) *
                self.activation(j))
       new_h = self.activation(new_c) * sigmoid(o)
-      new_state = array_ops.concat(3, [new_c, new_h])
+      new_state = array_ops.concat([new_c, new_h], 3)
 
       return new_h, new_state
       
@@ -73,7 +73,7 @@ def _conv(args, output_size, filter_size, stddev=0.001, bias=True, bias_start=0.
     if len(args) == 1:
       res = tf.nn.conv2d(args[0], kernel, [1, 1, 1, 1], padding='SAME')
     else:
-      res = tf.nn.conv2d(array_ops.concat(3, args), kernel, [1, 1, 1, 1], padding='SAME')
+      res = tf.nn.conv2d(array_ops.concat(args, 3), kernel, [1, 1, 1, 1], padding='SAME')
 
     if not bias: return res
     bias_term = vs.get_variable( "Bias", [output_size],
